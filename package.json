@@ -1,6 +1,6 @@
 {
   "name": "sap-cap-ai-request-hub",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "dependencies": {
     "@sap/cds": "^9"
   },

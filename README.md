@@ -47,6 +47,32 @@ The following capabilities are planned but are not implemented yet:
 * CI/CD pipeline
 * AI-assisted request summary and classification suggestions
 
+## Baseline Release v0.1.0
+
+Version `0.1.0` represents the first verified local CAP baseline of the project.
+
+The baseline includes:
+
+* CAP Node.js project structure
+* CDS domain model for `Requests`
+* OData V4 `RequestService`
+* Verified service root and `$metadata`
+* Local SQLite in-memory development database
+* Mock request data loaded from `test/data`
+* OData `$select` validation
+* Model-to-service architecture documentation
+* Clean Git baseline and release tag
+
+Current limitations:
+
+* No request lifecycle actions yet
+* No validation rules yet
+* No role-based authorization yet
+* No Fiori Elements or SAPUI5 UI yet
+* No SAP S/4HANA integration yet
+* No Cloud Foundry deployment yet
+* No real AI integration yet
+
 ## Current Architecture
 
 ```text
