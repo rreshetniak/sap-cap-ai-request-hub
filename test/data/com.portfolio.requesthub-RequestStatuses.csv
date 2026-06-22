@@ -1,0 +1,7 @@
+code,name,description
+DRAFT,Draft,Request is being prepared and has not been submitted yet
+SUBMITTED,Submitted,Request was submitted for processing
+IN_PROCESS,In Process,Request is currently being processed
+APPROVED,Approved,Request was approved
+REJECTED,Rejected,Request was rejected
+CLARIFICATION_REQUIRED,Clarification Required,Additional information is required from the requester

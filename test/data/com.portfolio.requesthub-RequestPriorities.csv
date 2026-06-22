@@ -1,0 +1,4 @@
+code,name,description
+LOW,Low,Can be processed in the normal queue
+MEDIUM,Medium,Requires timely processing
+HIGH,High,Requires prioritized processing

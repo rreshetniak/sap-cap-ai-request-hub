@@ -1,0 +1,4 @@
+code,name,description
+SUPPLIER_CHANGE,Supplier Change,Supplier master data change request
+INVOICE_CLARIFICATION,Invoice Clarification,Invoice amount or invoice document clarification
+ACCESS_REQUEST,Access Request,Access request for a business application or process
