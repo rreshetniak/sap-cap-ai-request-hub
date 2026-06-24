@@ -27,7 +27,10 @@ using {
   }
 
   entity Requests : cuid, managed {
+    @mandatory
+    @mandatory.message: 'A request title is required.'
     title         : String(255);
+    
     description   : LargeString;
 
     requestType   : Association to RequestTypes;
