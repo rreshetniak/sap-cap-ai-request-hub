@@ -1,3 +1,5 @@
+const UPDATE = require("@sap/cds/lib/ql/UPDATE");
+
 module.exports = (srv) => {
   srv.before("CREATE", "Requests", (req) => {
     if (req.data.status_code !== "DRAFT") {
@@ -11,7 +13,7 @@ module.exports = (srv) => {
 
   srv.before("UPDATE", "Requests", async (req) => {
     if (req.data.status_code === undefined) {
-      return; // No status_code update, so no need to check
+      return;
     }
 
     const currentRequest = await SELECT.one
@@ -28,4 +30,22 @@ module.exports = (srv) => {
       );
     }
   });
+
+  srv.on("submit", "Requests", async(req) => {
+    
+    const currentRequest = await SELECT.one.from(req.subject);
+
+    if (!currentRequest) {
+      req.reject(404, 'Request was not found');
+    }
+
+    if (currentRequest.status_code !== 'DRAFT') {
+      req.reject(400, 'Only requests with status "DRAFT" can be submitted.')
+    }
+
+    await UPDATE(req.subject).with({status_code: "SUBMITTED"});
+
+    return SELECT.one.from(req.subject);
+
+  })
 };
