@@ -232,3 +232,81 @@ The project is built step by step to demonstrate practical SAP BTP development s
 * Automated testing
 * SAP BTP deployment readiness
 * Enterprise-safe AI integration patterns
+
+## API Contract and Request Lifecycle
+
+### Service Boundaries
+
+| Service            | Base Path           | Intended Use                                                            |
+| ------------------ | ------------------- | ----------------------------------------------------------------------- |
+| `RequesterService` | `/requester`        | Requester-facing API for creating and tracking requests                 |
+| `ProcessorService` | `/processor`        | Processor-facing API for handling requests, history, and approval steps |
+| `RequestService`   | `/odata/v4/request` | Workflow API containing bound lifecycle actions                         |
+
+### Bound Lifecycle Actions
+
+All lifecycle actions below are bound to one specific request. The request is identified by its UUID in the URL.
+
+| Action                 | Required Input             | Planned Status Transition               | Return Type |
+| ---------------------- | -------------------------- | --------------------------------------- | ----------- |
+| `submit`               | None                       | `DRAFT` → `SUBMITTED`                   | `Requests`  |
+| `assign`               | `processorId`              | `SUBMITTED` → `IN_PROCESS`              | `Requests`  |
+| `approve`              | Optional `approvalComment` | `IN_PROCESS` → `APPROVED`               | `Requests`  |
+| `rejectRequest`        | `rejectionReason`          | `IN_PROCESS` → `REJECTED`               | `Requests`  |
+| `requestClarification` | `clarificationComment`     | `IN_PROCESS` → `CLARIFICATION_REQUIRED` | `Requests`  |
+
+### Lifecycle Contract
+
+```text
+DRAFT
+  └── submit() → SUBMITTED
+
+SUBMITTED
+  └── assign(processorId) → IN_PROCESS
+
+IN_PROCESS
+  ├── approve(approvalComment?) → APPROVED
+  ├── rejectRequest(rejectionReason) → REJECTED
+  └── requestClarification(clarificationComment) → CLARIFICATION_REQUIRED
+
+CLARIFICATION_REQUIRED
+  └── submit() → SUBMITTED
+```
+
+### Current Runtime State
+
+The lifecycle API contract is already published in OData `$metadata`.
+
+Current implementation status:
+
+* `submit` is implemented and currently allows submission only from `DRAFT`.
+* `assign`, `approve`, `rejectRequest`, and `requestClarification` are declared in CDS but will be implemented in Week 4.
+* `assignedProcessorId` is not yet part of the domain model. It will be added before implementing `assign`.
+* `RequestHistory` records are currently test data only. Runtime history creation will be implemented in Week 4.
+* Authorization rules for requester and processor roles are not implemented yet.
+
+### Verified Validation Responses
+
+| Scenario                                        |       HTTP Status | Response Target | Verified Result                                    |
+| ----------------------------------------------- | ----------------: | --------------- | -------------------------------------------------- |
+| Create request without `title`                  | `400 Bad Request` | `title`         | `A request title is required.`                     |
+| Create request with a status other than `DRAFT` | `400 Bad Request` | `status_code`   | Only requests with status `DRAFT` can be created   |
+| Submit a request that is not in `DRAFT`         | `400 Bad Request` | —               | Only requests with status `DRAFT` can be submitted |
+
+### API Documentation
+
+Verified OData query examples are available in:
+
+```text
+docs/api/odata-query-examples.md
+```
+
+The document includes verified examples for:
+
+* Reading one request by UUID
+* `$select`
+* `$filter`
+* `$orderby`
+* `$top`
+* `$skip`
+* `$expand`
