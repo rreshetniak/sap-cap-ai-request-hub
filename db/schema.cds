@@ -5,6 +5,30 @@ using {
   managed
 } from '@sap/cds/common';
 
+type RequestStatusCode       : String(30) enum {
+  Draft = 'DRAFT';
+  Submitted = 'SUBMITTED';
+  InProcess = 'IN_PROCESS';
+  Approved = 'APPROVED';
+  Rejected = 'REJECTED';
+  ClarificationRequired = 'CLARIFICATION_REQUIRED';
+};
+
+type RequestHistoryEventType : String(40) enum {
+  Created = 'CREATED';
+  Submitted = 'SUBMITTED';
+  ProcessingStarted = 'PROCESSING_STARTED';
+  Approved = 'APPROVED';
+  Rejected = 'REJECTED';
+  ClarificationRequested = 'CLARIFICATION_REQUESTED';
+};
+
+type ApprovalDecision : String(30) enum {
+  Pending = 'PENDING';
+  Approved = 'APPROVED';
+  Rejected = 'REJECTED';
+}
+
 @cds.autoexpose
 entity RequestTypes {
   key code        : String(50);
@@ -21,7 +45,7 @@ entity RequestPriorities {
 
 @cds.autoexpose
 entity RequestStatuses {
-  key code        : String(30);
+  key code        : RequestStatusCode;
       name        : String(100);
       description : String(255);
 }
@@ -33,11 +57,12 @@ entity RequestComments : cuid, managed {
 }
 
 entity RequestHistory : cuid, managed {
-  request        : Association to Requests;
-  eventType      : String(30);
-  previousStatus : Association to RequestStatuses;
-  newStatus      : Association to RequestStatuses;
-  comment        : LargeString;
+  request             : Association to Requests;
+  eventType           : RequestHistoryEventType;
+  previousStatus      : Association to RequestStatuses;
+  newStatus           : Association to RequestStatuses;
+  assignedProcessorId : String(255);
+  comment             : LargeString;
 }
 
 entity ApprovalSteps : cuid, managed {
@@ -52,23 +77,26 @@ entity ApprovalSteps : cuid, managed {
 entity Requests : cuid, managed {
   @mandatory
   @mandatory.message: 'A request title is required.'
-  title            : String(255);
+  title               : String(255);
 
-  description      : LargeString;
-  businessPartnerId : String(20);
+  description         : LargeString;
+  businessPartnerId   : String(20);
+  assignedProcessorId : String(255);
 
-  requestType      : Association to RequestTypes;
-  priority         : Association to RequestPriorities;
-  status           : Association to RequestStatuses;
+  requestType         : Association to RequestTypes;
+  priority            : Association to RequestPriorities;
 
-  comments         : Composition of many RequestComments
-                       on comments.request = $self;
+  @readonly
+  status              : Association to RequestStatuses default 'DRAFT';
 
-  history          : Composition of many RequestHistory
-                       on history.request = $self;
+  comments            : Composition of many RequestComments
+                          on comments.request = $self;
 
-  approvalSteps    : Composition of many ApprovalSteps
-                       on approvalSteps.request = $self;
+  history             : Composition of many RequestHistory
+                          on history.request = $self;
 
-  aiSummary        : LargeString;
+  approvalSteps       : Composition of many ApprovalSteps
+                          on approvalSteps.request = $self;
+
+  aiSummary           : LargeString;
 }

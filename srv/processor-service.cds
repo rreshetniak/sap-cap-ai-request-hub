@@ -17,6 +17,7 @@ service ProcessorService {
     aiSummary,
     comments,
     history,
-    approvalSteps
+    approvalSteps,
+    assignedProcessorId
   };
 }
