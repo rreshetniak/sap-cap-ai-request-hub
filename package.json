@@ -10,7 +10,9 @@
   },
   "scripts": {
     "start": "cds-serve",
-    "test": "node --test"
+    "test": "node --test",
+    "test:read": "node --test test/request-service-read.test.js",
+    "test:lifecycle": "node --test test/request-lifecycle-submit.test.js test/request-lifecycle-negative.test.js test/request-lifecycle-approve.test.js"
   },
   "private": true
 }
