@@ -14,5 +14,28 @@
     "test:read": "node --test test/request-service-read.test.js",
     "test:lifecycle": "node --test test/request-lifecycle-submit.test.js test/request-lifecycle-negative.test.js test/request-lifecycle-approve.test.js"
   },
-  "private": true
+  "private": true,
+  "cds": {
+    "requires": {
+      "auth": {
+        "[development]": {
+          "kind": "mocked",
+          "users": {
+            "requester": {
+              "password": "requester",
+              "roles": ["Requester"]
+            },
+            "processor": {
+              "password": "processor",
+              "roles": ["Processor"]
+            },
+            "admin": {
+              "password": "admin",
+              "roles": ["Admin"]
+            }
+          }
+        }
+      }
+    }
+  }
 }
