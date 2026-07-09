@@ -21,15 +21,19 @@
         "[development]": {
           "kind": "mocked",
           "users": {
-            "requester": {
+            "0001_requester@scarh.com": {
               "password": "requester",
               "roles": ["Requester"]
             },
-            "processor": {
+            "0002_requester@scarh.com": {
+              "password": "requester",
+              "roles": ["Requester"]
+            },
+            "0001_processor@scarh.com": {
               "password": "processor",
               "roles": ["Processor"]
             },
-            "admin": {
+            "0001_admin@scarh.com": {
               "password": "admin",
               "roles": ["Admin"]
             }

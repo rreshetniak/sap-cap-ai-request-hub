@@ -1,4 +1,4 @@
-ID,title,description,requestType_code,priority_code,status_code,aiSummary
-11111111-1111-1111-1111-111111111111,Invoice amount clarification,"Supplier invoice amount does not match the purchase order.",INVOICE_CLARIFICATION,HIGH,DRAFT,
-22222222-2222-2222-2222-222222222222,Supplier bank account change,"Supplier submitted new bank account details and requires master-data validation.",SUPPLIER_CHANGE,MEDIUM,SUBMITTED,
-33333333-3333-3333-3333-333333333333,Approval cockpit access,"A business user requires access to the approval cockpit for request processing.",ACCESS_REQUEST,LOW,IN_PROCESS,
+ID,createdBy,assignedProcessorId,title,description,requestType_code,priority_code,status_code,aiSummary
+11111111-1111-1111-1111-111111111111,0001_requester@scarh.com,,Invoice amount clarification,"Supplier invoice amount does not match the purchase order.",INVOICE_CLARIFICATION,HIGH,DRAFT,
+22222222-2222-2222-2222-222222222222,0002_requester@scarh.com,,Supplier bank account change,"Supplier submitted new bank account details and requires master-data validation.",SUPPLIER_CHANGE,MEDIUM,SUBMITTED,
+33333333-3333-3333-3333-333333333333,0001_requester@scarh.com,0001_processor@scarh.com,Approval cockpit access,"A business user requires access to the approval cockpit for request processing.",ACCESS_REQUEST,LOW,IN_PROCESS,

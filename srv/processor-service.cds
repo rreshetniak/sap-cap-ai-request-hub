@@ -1,7 +1,12 @@
 using com.portfolio.requesthub as db from '../db/schema';
 
 @path: '/processor'
+@requires: ['Processor', 'Admin']
 service ProcessorService {
+  @restrict: [
+    {grant: 'READ', to: 'Processor', where: (assignedProcessorId = $user)},
+    {grant: 'READ', to: 'Admin'}
+  ]
   entity Requests as projection on db.Requests {
     ID,
     createdAt,

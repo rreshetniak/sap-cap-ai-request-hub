@@ -1,12 +1,21 @@
 const cds = require("@sap/cds");
 
 const { GET, expect } = cds.test();
+const adminAuth = {
+  auth: {
+    username: "0001_admin@scarh.com",
+    password: "admin",
+  },
+};
 
 describe("RequestService read API", () => {
 
   it("reads an existing request from test data", async () => {
     const requestId = "11111111-1111-1111-1111-111111111111";
-    const response = await GET(`/odata/v4/request/Requests(${requestId})`);
+    const response = await GET(
+      `/odata/v4/request/Requests(${requestId})`, 
+      adminAuth
+    );
 
     expect(response.data.ID).to.equal(requestId);
     expect(response.data.title).to.equal("Invoice amount clarification");
@@ -21,7 +30,8 @@ describe("RequestService read API", () => {
 
     try{
       await GET(
-        `/odata/v4/request/Requests(${missingRequestId})`,
+        `/odata/v4/request/Requests(${missingRequestId})`, 
+        adminAuth
       );
     } catch(error) {
       missingRequestError = error;
