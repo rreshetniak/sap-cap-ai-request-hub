@@ -2,74 +2,129 @@
 
 ## Purpose
 
-This document describes the local authorization model for the Request Hub CAP application.
+This document describes the authorization model of the Request Hub CAP application.
 
-The current goal is to define local development users and roles that will be used for security testing.
+The goal of the current security model is to protect request data on three levels:
 
-This configuration is only for local development and automated tests. It is not the productive BTP identity provider configuration.
+1. service-level access,
+2. action-level access,
+3. instance-level read access.
 
-## Authentication and Authorization
+The current implementation uses local mock users for development and automated API tests.
 
-Authentication answers:
-
-```text
-Who is the current user?
-```
-
-Authorization answers:
-
-```text
-What is the current user allowed to do?
-```
-
-In this project, local mock users are used to simulate authenticated users during development and automated API testing.
+This configuration is intended for local development and test execution only. It is not a productive SAP BTP identity provider configuration.
 
 ## Local Mock Users
 
-The project defines three local mock users in `package.json`.
+The project uses email-like technical user IDs for local mock authentication.
 
-| User | Password | Role |
+| User ID | Password | Role |
 |---|---|---|
-| `requester` | `requester` | `Requester` |
-| `processor` | `processor` | `Processor` |
-| `admin` | `admin` | `Admin` |
+| `0001_requester@scarh.com` | `requester` | `Requester` |
+| `0002_requester@scarh.com` | `requester` | `Requester` |
+| `0001_processor@scarh.com` | `processor` | `Processor` |
+| `0001_admin@scarh.com` | `admin` | `Admin` |
 
-These credentials are only valid for local development.
+The email-like user IDs are used intentionally because instance-level authorization compares business fields with the current authenticated user.
 
-They must not be used as productive credentials.
+For example:
 
-## Roles
+```text
+createdBy = $user
+assignedProcessorId = $user
 
-### Requester
+## Service-level Authorization
 
-Represents a business user who works with own requests.
+The application exposes three CAP services with role-based access restrictions.
 
-### Processor
+| Service | Path | Allowed Roles |
+|---|---|---|
+| `RequesterService` | `/requester` | `Requester`, `Admin` |
+| `ProcessorService` | `/processor` | `Processor`, `Admin` |
+| `RequestService` | `/odata/v4/request` | `Requester`, `Processor`, `Admin` |
 
-Represents a backoffice user who processes submitted requests.
+Service-level authorization defines which roles are allowed to access a service at all.
 
-### Admin
+It does not decide which concrete request instances are visible to a user.
 
-Represents an administrative user for the MVP.
+## Action-level Authorization
 
-## Current Implementation Status
+Lifecycle actions are protected with action-level role restrictions.
 
-The project currently defines mock users and roles only.
+| Action | Allowed Roles |
+|---|---|
+| `submit` | `Requester`, `Admin` |
+| `assign` | `Processor`, `Admin` |
+| `approve` | `Processor`, `Admin` |
+| `rejectRequest` | `Processor`, `Admin` |
+| `requestClarification` | `Processor`, `Admin` |
 
-No service-level authorization rules are active yet.
+Action-level authorization defines which roles are allowed to execute a specific business operation.
 
-No action-level authorization rules are active yet.
+For example, a requester can access `RequestService`, but cannot execute processor actions such as `assign` or `approve`.
 
-No instance-level authorization rules are active yet.
+## Instance-level Read Authorization
 
-Current API tests still run without role-based restrictions.
+Instance-level read authorization restricts which concrete request records are visible to a user.
+
+### RequesterService
+
+Requester users can read only requests created by themselves.
+
+```cds
+@restrict: [
+  { grant: 'READ', to: 'Requester', where: (createdBy = $user) },
+  { grant: 'READ', to: 'Admin' }
+]
+```
+
+This means:
+
+```text
+Requester can read a request only if createdBy equals the current authenticated user.
+```
+
+### ProcessorService
+
+Processor users can read only requests assigned to themselves.
+
+```cds
+@restrict: [
+  { grant: 'READ', to: 'Processor', where: (assignedProcessorId = $user) },
+  { grant: 'READ', to: 'Admin' }
+]
+```
+
+This means:
+
+```text
+Processor can read a request only if assignedProcessorId equals the current authenticated user.
+```
+
+### Admin Access
+
+Admin users can read all requests through both `RequesterService` and `ProcessorService`.
+
+Admin access is intentionally unrestricted in the MVP authorization model.
 
 ## Test Evidence
 
-The current API test suite passes with the local mock user configuration in place:
+The security model is covered by automated API tests.
+
+| Test File | Purpose |
+|---|---|
+| `test/request-service-authorization.test.js` | Verifies service-level authorization |
+| `test/request-action-authorization.test.js` | Verifies action-level authorization |
+| `test/request-instance-authorization.test.js` | Verifies instance-level read authorization |
+| `test/request-lifecycle-submit.test.js` | Verifies submit lifecycle with authorized users |
+| `test/request-lifecycle-negative.test.js` | Verifies negative lifecycle behavior with authorized users |
+| `test/request-lifecycle-approve.test.js` | Verifies approve lifecycle with authorized users |
+| `test/request-service-read.test.js` | Verifies read behavior and 404 handling |
+
+Current test evidence:
 
 ```text
-tests 6
-pass 6
+tests 17
+pass 17
 fail 0
 ```
