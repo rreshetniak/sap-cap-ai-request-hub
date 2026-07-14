@@ -25,7 +25,7 @@ annotate service.Requests with @(
         Value: title,
       },
       Description: {
-        Value: status,
+        Value: status.name,
       },
     },
     
@@ -39,9 +39,9 @@ annotate service.Requests with @(
 
     LineItem: [
       {Value: title, Label: 'Title'},
-      {Value: requestType, Label: 'Type'},
-      {Value: priority, Label: 'Priority'},
-      {Value: status, Label: 'Status'},
+      {Value: requestType.name, Label: 'Type'},
+      {Value: priority.name, Label: 'Priority'},
+      {Value: status.name, Label: 'Status'},
       {Value: assignedProcessorId, Label: 'Assigned Processor'},
       {Value: modifiedAt, Label: 'Changed At'}
     ],
@@ -49,9 +49,9 @@ annotate service.Requests with @(
     Identification: [
       {Value: title, Label: 'Title'},
       {Value: description, Label: 'Description'},
-      {Value: status, Label: 'Status'},
-      {Value: requestType, Label: 'Request Type'},
-      {Value: priority, Label: 'Priority'},
+      {Value: status.name, Label: 'Status'},
+      {Value: requestType.name, Label: 'Request Type'},
+      {Value: priority.name, Label: 'Priority'},
       {Value: businessPartnerId, Label: 'Business Partner'},
       {Value: assignedProcessorId, Label: 'Assigned Processor'}
     ],
@@ -66,9 +66,9 @@ annotate service.Requests with @(
 
     FieldGroup #Processing: {
       Data: [
-        {Value: status, Label: 'Status'},
-        {Value: requestType, Label: 'Request Type'},
-        {Value: priority, Label: 'Priority'},
+        {Value: status.name, Label: 'Status'},
+        {Value: requestType.name, Label: 'Request Type'},
+        {Value: priority.name, Label: 'Priority'},
         {Value: assignedProcessorId, Label: 'Assigned Processor'}
       ]
     },
@@ -104,4 +104,16 @@ annotate service.Requests with @(
     ]
   }
 );
+
+annotate service.RequestTypes with @(
+  cds.odata.valuelist
+);
+
+annotate service.RequestPriorities with @(
+  cds.odata.valuelist
+);
+
+annotate service.RequestStatuses with @(
+  cds.odata.valuelist
+);  
 
