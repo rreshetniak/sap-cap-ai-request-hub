@@ -10,7 +10,7 @@ module.exports = (srv) => {
   const transitionSnapshots = new WeakMap();
 
   // Shared helper: create a RequestHistory entry
-  
+
   const readCurrentRequest = async (req) => {
     const currentRequest = await SELECT.one.from(req.subject);
 
@@ -150,6 +150,28 @@ module.exports = (srv) => {
         eventType: "PROCESSING_STARTED",
         assignedProcessorId: req.data.processorId,
       });
+
+      const pendingApprovalSteps = await SELECT.from(ApprovalSteps).where({
+        request_ID: beforeActionRequest.ID,
+        decision: "PENDING",
+      });
+
+      if (pendingApprovalSteps.length === 0) {
+        const lastApprovalStep = await SELECT.from(ApprovalSteps)
+          .columns("stepNo")
+          .where({ request_ID: beforeActionRequest.ID })
+          .orderBy("stepNo desc")
+          .limit(1);
+
+        const nextStepNo = (lastApprovalStep[0]?.stepNo ?? 0) + 1;
+
+        await INSERT.into(ApprovalSteps).entries({
+          request_ID: beforeActionRequest.ID,
+          stepNo: nextStepNo,
+          approverId: req.data.processorId,
+          decision: "PENDING",
+        });
+      }
     } finally {
       transitionSnapshots.delete(req);
     }
