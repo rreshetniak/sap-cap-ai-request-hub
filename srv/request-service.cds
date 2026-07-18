@@ -1,18 +1,18 @@
 using com.portfolio.requesthub as db from '../db/schema';
 
-@require: ['Admin', 'Requester', 'Processor']
+@requires: ['Admin', 'Requester', 'Processor']
 service RequestService {
   entity Requests as projection on db.Requests actions {
-    @requires: ['Requester', 'Admn']
+    @requires: ['Requester', 'Admin']
     action submit(
     ) returns Requests;
 
-    @requires: ['Processor', 'Admn']
+    @requires: ['Processor', 'Admin']
     action assign(
       processorId: String(255) not null
     ) returns Requests;
 
-    @requires: ['Processor', 'Admn']
+    @requires: ['Processor', 'Admin']
     action approve(
       approvalComment: String(500)
     ) returns Requests;
