@@ -324,4 +324,52 @@ module.exports = (srv) => {
       transitionSnapshots.delete(req);
     }
   });
+
+  // Function getBusinessPartnerDetails
+
+  srv.on("getBusinessPartnerDetails", Requests, async (req) => {
+    const currentRequest = await readCurrentRequest(req);
+    const businessPartnerId = currentRequest.businessPartnerId?.trim();
+
+    if (!businessPartnerId) {
+      return req.reject({
+        status: 409,
+        code: "BUSINESS_PARTNER_ID_REQUIRED",
+        message: "The request does not contain a Business Partner identifier.",
+        target: "businessPartnerId",
+      });
+    }
+
+    const businessPartnerService =
+      cds.services["API_BUSINESS_PARTNER"] ??
+      (await cds.connect.to("API_BUSINESS_PARTNER"));
+
+    const { A_BusinessPartner } = businessPartnerService.entities;
+    const businessPartner = await businessPartnerService.run(
+      SELECT.one
+        .from(A_BusinessPartner)
+        .columns(
+          "BusinessPartner",
+          "BusinessPartnerCategory",
+          "BusinessPartnerName",
+        )
+        .where({
+          BusinessPartner: businessPartnerId,
+        }),
+    );
+
+    if (!businessPartner) {
+      return req.reject({
+        status: 404,
+        code: "BUSINESS_PARTNER_NOT_FOUND",
+        message: `Business Partner ${businessPartnerId} was not found.`,
+      });
+    }
+
+    return {
+      id: businessPartner.BusinessPartner,
+      category: businessPartner.BusinessPartnerCategory,
+      displayName: businessPartner.BusinessPartnerName,
+    };
+  });
 };
