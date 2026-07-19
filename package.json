@@ -2,7 +2,10 @@
   "name": "sap-cap-ai-request-hub",
   "version": "0.1.0",
   "dependencies": {
-    "@sap/cds": "^9"
+    "@sap/cds": "^9",
+    "@sap-cloud-sdk/connectivity": "^4",
+    "@sap-cloud-sdk/http-client": "^4",
+    "@sap-cloud-sdk/resilience": "^4"
   },
   "devDependencies": {
     "@cap-js/cds-test": "^1.0.1",
@@ -49,6 +52,10 @@
             }
           }
         }
+      },
+      "API_BUSINESS_PARTNER": {
+        "kind": "odata-v2",
+        "model": "srv/external/API_BUSINESS_PARTNER"
       }
     }
   },
