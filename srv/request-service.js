@@ -340,29 +340,53 @@ module.exports = (srv) => {
       });
     }
 
-    const businessPartnerService =
-      cds.services["API_BUSINESS_PARTNER"] ??
-      (await cds.connect.to("API_BUSINESS_PARTNER"));
+    let businessPartner;
 
-    const { A_BusinessPartner } = businessPartnerService.entities;
-    const businessPartner = await businessPartnerService.run(
-      SELECT.one
-        .from(A_BusinessPartner)
-        .columns(
-          "BusinessPartner",
-          "BusinessPartnerCategory",
-          "BusinessPartnerName",
-        )
-        .where({
-          BusinessPartner: businessPartnerId,
-        }),
-    );
+    try {
+      const businessPartnerService =
+       await cds.connect.to("API_BUSINESS_PARTNER");
+
+      const { A_BusinessPartner } = businessPartnerService.entities;
+
+      businessPartner = await businessPartnerService.run(
+        SELECT.one
+          .from(A_BusinessPartner)
+          .columns(
+            "BusinessPartner",
+            "BusinessPartnerCategory",
+            "BusinessPartnerName",
+          )
+          .where({
+            BusinessPartner: businessPartnerId,
+          }),
+      );
+    } catch (error) {
+      return req.reject({
+        status: 503,
+        code: "BUSINESS_PARTNER_SERVICE_UNAVAILABLE",
+        message: "The Business Partner service is currently unavailable.",
+      });
+    }
 
     if (!businessPartner) {
       return req.reject({
         status: 404,
         code: "BUSINESS_PARTNER_NOT_FOUND",
         message: `Business Partner ${businessPartnerId} was not found.`,
+      });
+    }
+
+    const hasValidBusinessPartnerResponse =
+      typeof businessPartner.BusinessPartner === "string" &&
+      businessPartner.BusinessPartner === businessPartnerId &&
+      typeof businessPartner.BusinessPartnerName === "string" &&
+      businessPartner.BusinessPartnerName.trim().length > 0;
+
+    if (!hasValidBusinessPartnerResponse) {
+      return req.reject({
+        status: 502,
+        code: "BUSINESS_PARTNER_RESPONSE_INVALID",
+        message: "The Business Partner service returned an invalid response.",
       });
     }
 
