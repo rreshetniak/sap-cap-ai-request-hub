@@ -1,0 +1,92 @@
+_schema-version: 3.3.0
+ID: sap-cap-ai-request-hub
+version: 0.1.0
+description: "A simple CAP project."
+parameters:
+  enable-parallel-deployments: true
+build-parameters:
+  before-all:
+    - builder: custom
+      commands:
+        - npm ci
+        - npx cds build --production
+modules:
+  - name: sap-cap-ai-request-hub-srv
+    type: nodejs
+    path: gen/srv
+    parameters:
+      instances: 1
+      buildpack: nodejs_buildpack
+    build-parameters:
+      builder: npm-ci
+    provides:
+      - name: srv-api # required by consumers of CAP services (e.g. approuter)
+        properties:
+          srv-url: ${default-url}
+    requires:
+      - name: sap-cap-ai-request-hub-auth
+      - name: sap-cap-ai-request-hub-db
+      - name: sap-cap-ai-request-hub-destination
+
+  - name: sap-cap-ai-request-hub-db-deployer
+    type: hdb
+    path: gen/db
+    parameters:
+      buildpack: nodejs_buildpack
+    requires:
+      - name: sap-cap-ai-request-hub-db
+
+resources:
+  - name: sap-cap-ai-request-hub-auth
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: xsuaa
+      service-plan: application
+      path: ./xs-security.json
+      config:
+        xsappname: sap-cap-ai-request-hub-${org}-${space}
+        tenant-mode: dedicated
+        oauth2-configuration:
+          credential-types:
+            - "binding-secret"
+            - "x509"
+        # role-collections:
+          # - name: 'Processor (sap-cap-ai-request-hub ${org}-${space})'
+          #   description: 'generated'
+          #   role-template-references:
+          #     - '$XSAPPNAME.Processor'
+          # - name: 'Admin (sap-cap-ai-request-hub ${org}-${space})'
+          #   description: 'generated'
+          #   role-template-references:
+          #     - '$XSAPPNAME.Admin'
+          # - name: 'Requester (sap-cap-ai-request-hub ${org}-${space})'
+          #   description: 'generated'
+          #   role-template-references:
+          #     - '$XSAPPNAME.Requester'
+          role-collections:
+          - name: RequestHub_Administrators
+            description: Full access to Request Hub for administration and end-to-end processing.
+            role-template-references:
+              - '$XSAPPNAME.Admin'
+              - '$XSAPPNAME.Processor'
+              - '$XSAPPNAME.Requester'
+
+          - name: RequestHub_Requesters
+            description: Allows business users to create and access their own requests.
+            role-template-references:
+              - '$XSAPPNAME.Requester'
+
+          - name: RequestHub_Processors
+            description: Allows business users to process requests assigned to them.
+            role-template-references:
+              - '$XSAPPNAME.Processor'
+  - name: sap-cap-ai-request-hub-db
+    type: com.sap.xs.hdi-container
+    parameters:
+      service: hana
+      service-plan: hdi-shared
+  - name: sap-cap-ai-request-hub-destination
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: destination
+      service-plan: lite

@@ -20,19 +20,25 @@
     {
       "name": "Processor",
       "description": "generated",
-      "scope-references": ["$XSAPPNAME.Processor"],
+      "scope-references": [
+        "$XSAPPNAME.Processor"
+      ],
       "attribute-references": []
     },
     {
       "name": "Admin",
       "description": "generated",
-      "scope-references": ["$XSAPPNAME.Admin"],
+      "scope-references": [
+        "$XSAPPNAME.Admin"
+      ],
       "attribute-references": []
     },
     {
       "name": "Requester",
       "description": "generated",
-      "scope-references": ["$XSAPPNAME.Requester"],
+      "scope-references": [
+        "$XSAPPNAME.Requester"
+      ],
       "attribute-references": []
     }
   ]
