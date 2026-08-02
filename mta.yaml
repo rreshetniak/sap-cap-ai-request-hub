@@ -38,35 +38,9 @@ modules:
 
 resources:
   - name: sap-cap-ai-request-hub-auth
-    type: org.cloudfoundry.managed-service
+    type: org.cloudfoundry.existing-service
     parameters:
-      service: xsuaa
-      service-plan: application
-      path: ./xs-security.json
-      config:
-        xsappname: sap-cap-ai-request-hub-${org}-${space}
-        tenant-mode: dedicated
-        oauth2-configuration:
-          credential-types:
-            - "binding-secret"
-            - "x509"
-        role-collections:
-        - name: RequestHub_Administrators
-          description: Full access to Request Hub for administration and end-to-end processing.
-          role-template-references:
-            - '$XSAPPNAME.Admin'
-            - '$XSAPPNAME.Processor'
-            - '$XSAPPNAME.Requester'
-
-        - name: RequestHub_Requesters
-          description: Allows business users to create and access their own requests.
-          role-template-references:
-            - '$XSAPPNAME.Requester'
-
-        - name: RequestHub_Processors
-          description: Allows business users to process requests assigned to them.
-          role-template-references:
-            - '$XSAPPNAME.Processor'
+      service-name: request-hub-auth
   - name: sap-cap-ai-request-hub-db
     type: com.sap.xs.hdi-container
     parameters:
