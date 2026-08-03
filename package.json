@@ -13,11 +13,12 @@
     "@cap-js/cds-test": "^1.0.1",
     "@cap-js/sqlite": "^2.4",
     "@sap/cds-dk": "^9.9.3",
-    "cds-plugin-ui5": "^0.17.0"
+    "cds-plugin-ui5": "^0.17.0",
+    "cross-env": "^10.1.0"
   },
   "scripts": {
     "start": "cds-serve",
-    "test": "set CDS_PLUGIN_UI5_ACTIVE=false&& node --test \"test/**/*.test.js\"",
+    "test": "cross-env CDS_PLUGIN_UI5_ACTIVE=false node --test \"test/**/*.test.js\"",
     "test:read": "node --test test/request-service-read.test.js",
     "test:lifecycle": "node --test test/request-lifecycle-submit.test.js test/request-lifecycle-negative.test.js test/request-lifecycle-approve.test.js",
     "watch-requesthub": "cds watch --open com.portfolio.requesthub/index.html?sap-ui-xx-viewCache=false --livereload false"
