@@ -1,6 +1,6 @@
 name: Request Hub CI
 
-on: 
+on:
   push:
     branches:
     - main
@@ -9,7 +9,7 @@ on:
     - main
   workflow_dispatch:
 
-permissions: 
+permissions:
   contents: read
 
 jobs:
@@ -31,5 +31,35 @@ jobs:
       - name: Run automated tests
         run: npm test
 
-      - name: Build CAP for production
-        run: npx cds build --production
+  package:
+    name: Build MTA archive
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+
+      - name: Install Cloud MTA Build Tool
+        run: npm install --global mbt@1.2.49
+
+      - name: Build MTA archive
+        run: mbt build -t mta_archives --mtar sap-cap-ai-request-hub_0.1.0.mtar
+
+      - name: Verify MTA archive
+        run: |
+          ls -lh mta_archives/sap-cap-ai-request-hub_0.1.0.mtar
+          sha256sum mta_archives/sap-cap-ai-request-hub_0.1.0.mtar
+
+      - name: Upload MTA archive
+        uses: actions/upload-artifact@v7
+        with:
+          path: mta_archives/sap-cap-ai-request-hub_0.1.0.mtar
+          archive: false
+          if-no-files-found: error
+          retention-days: 7
