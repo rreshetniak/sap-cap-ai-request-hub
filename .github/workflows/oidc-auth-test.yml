@@ -1,0 +1,70 @@
+name: Test BTP OIDC Authentication
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  oidc-auth-test:
+    runs-on: ubuntu-latest
+    environment: btp-trial-dev
+    steps:
+    - name: Install Cloud Foundry CLI
+      run: |
+        wget -q -O - https://packages.cloudfoundry.org/debian/cli.cloudfoundry.org.key \
+          | sudo gpg --dearmor -o /usr/share/keyrings/cli.cloudfoundry.org.gpg
+
+        echo "deb [signed-by=/usr/share/keyrings/cli.cloudfoundry.org.gpg] https://packages.cloudfoundry.org/debian stable main" \
+          | sudo tee /etc/apt/sources.list.d/cloudfoundry-cli.list
+
+        sudo apt-get update
+        sudo apt-get install -y cf8-cli
+
+        cf version
+    - name: Get short-lived GitHub OIDC token
+      id: get-github-jwt
+      env:
+        IAS_ISSUER: ${{ vars.IAS_ISSUER }}
+      run: |
+        githubJwt=$(curl -sS --fail \
+          -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+          -H "Accept: application/json; api-version=2.0" \
+          "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$IAS_ISSUER" \
+          | jq -r '.value')
+
+        test -n "$githubJwt"
+        test "$githubJwt" != "null"
+
+        echo "::add-mask::$githubJwt"
+        echo "githubJwt=$githubJwt" >> "$GITHUB_OUTPUT"
+
+        echo "GitHub OIDC token received successfully."
+          - name: Set Cloud Foundry API
+        env:
+          CF_API: ${{ vars.CF_API }}
+        run: |
+          cf api "$CF_API"
+
+    - name: Authenticate to Cloud Foundry with GitHub OIDC
+      env:
+        GITHUB_JWT: ${{ steps.get-github-jwt.outputs.githubJwt }}
+        CF_ORIGIN: ${{ vars.CF_ORIGIN }}
+      run: |
+        cf auth --assertion "$GITHUB_JWT" --origin "$CF_ORIGIN"
+
+    - name: Target Cloud Foundry org and space
+      env:
+        CF_ORG: ${{ vars.CF_ORG }}
+        CF_SPACE: ${{ vars.CF_SPACE }}
+      run: |
+        cf target -o "$CF_ORG" -s "$CF_SPACE"
+        cf target
+        cf apps
+
+    - name: Logout from Cloud Foundry
+      if: always()
+      run: |
+        cf logout
