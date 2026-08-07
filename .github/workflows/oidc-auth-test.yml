@@ -42,10 +42,10 @@ jobs:
         echo "githubJwt=$githubJwt" >> "$GITHUB_OUTPUT"
 
         echo "GitHub OIDC token received successfully."
-          - name: Set Cloud Foundry API
-        env:
-          CF_API: ${{ vars.CF_API }}
-        run: |
+    - name: Set Cloud Foundry API
+      env:
+        CF_API: ${{ vars.CF_API }}
+      run: |
           cf api "$CF_API"
 
     - name: Authenticate to Cloud Foundry with GitHub OIDC
