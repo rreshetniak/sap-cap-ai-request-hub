@@ -148,6 +148,17 @@ jobs:
         run: |
           cf deploy sap-cap-ai-request-hub_0.1.0.mtar -f
 
+      - name: Smoke test deployed CAP service
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+        run: |
+          status=$(curl -sS -o /dev/null -w "%{http_code}" \
+            "$APP_URL/odata/v4/request/Requests")
+
+          echo "HTTP status: $status"
+
+          test "$status" = "401"
+
       - name: Logout from Cloud Foundry
         if: always()
         run: |
