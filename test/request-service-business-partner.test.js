@@ -2,6 +2,7 @@ const cds = require("@sap/cds");
 
 const test = cds.test(__dirname + "/..", "--with-mocks");
 const { GET, PATCH, expect, data } = test;
+const log = test.log();
 
 let businessPartnerMockMode = "default";
 
@@ -172,5 +173,21 @@ describe("RequestService Business Partner integration", () => {
     expect(requestError).to.not.equal(undefined);
     expect(requestError.status).to.equal(503);
     expect(requestError.code).to.equal("BUSINESS_PARTNER_SERVICE_UNAVAILABLE");
+
+    expect(requestError.response.data.error.message).to.equal(
+      "The Business Partner service is currently unavailable.",
+    );
+    expect(requestError.response.data.error.message).to.not.include(
+      "Simulated Business Partner service failure.",
+    );
+
+    expect(log.output).to.include(
+      "Business Partner service call failed.",
+    );
+    expect(log.output).to.include(requestId);
+    expect(log.output).to.include("1000000001");
+    expect(log.output).to.include(
+      "Simulated Business Partner service failure.",
+    );
   });
 });

@@ -1,4 +1,5 @@
 const cds = require("@sap/cds");
+const LOG = cds.log("request-service");
 const { SELECT, UPDATE, INSERT } = cds.ql;
 
 module.exports = (srv) => {
@@ -361,6 +362,11 @@ module.exports = (srv) => {
           }),
       );
     } catch (error) {
+      LOG.warn("Business Partner service call failed.", {
+        requestId: currentRequest.ID,
+        businessPartnerId,
+        reason: error.message,
+      });
       return req.reject({
         status: 503,
         code: "BUSINESS_PARTNER_SERVICE_UNAVAILABLE",
