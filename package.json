@@ -48,6 +48,12 @@
                 "Processor"
               ]
             },
+            "0002_processor@scarh.com": {
+              "password": "processor",
+              "roles": [
+                "Processor"
+              ]
+            },
             "0001_admin@scarh.com": {
               "password": "admin",
               "roles": [

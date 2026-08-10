@@ -16,6 +16,13 @@ const processorAuth = {
   },
 };
 
+const unassignedProcessorAuth = {
+  auth: {
+    username: "0002_processor@scarh.com",
+    password: "processor",
+  },
+};
+
 describe("RequestService action-level authorization", () => {
   beforeEach(data.reset);
 
@@ -71,6 +78,30 @@ describe("RequestService action-level authorization", () => {
 
     expect(approveError.status).to.equal(403);
   });
+
+  it("blocks an unassigned processor from approving a request", async () => {
+  const requestId = "33333333-3333-3333-3333-333333333333";
+
+  const approveUrl =
+    `/odata/v4/request/Requests(${requestId})/RequestService.approve`;
+
+  let approveError;
+
+  try {
+    await POST(
+      approveUrl,
+      {
+        approvalComment: "Approval by an unassigned processor.",
+      },
+      unassignedProcessorAuth,
+    );
+  } catch (error) {
+    approveError = error;
+  }
+
+  expect(approveError).to.exist;
+  expect(approveError.status).to.equal(403);
+});
 
   it("blocks processor from submitting a request", async () => {
     const requestId = "11111111-1111-1111-1111-111111111111";
