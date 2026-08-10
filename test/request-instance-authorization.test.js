@@ -45,6 +45,28 @@ describe("Request Hub instance-level authorization", () => {
     expect(requestIds).to.not.include("22222222-2222-2222-2222-222222222222");
   });
 
+  it("prevents requester 0001 from reading requester 0002 requests through RequestService", async () => {
+    const response = await GET(
+      "/odata/v4/request/Requests",
+      requesterOneAuth,
+    );
+
+    expect(response.status).to.equal(200);
+
+    const requestIds = response.data.value.map((request) => request.ID);
+
+    expect(requestIds).to.include(
+      "11111111-1111-1111-1111-111111111111",
+    );
+    expect(requestIds).to.include(
+      "33333333-3333-3333-3333-333333333333",
+    );
+
+    expect(requestIds).to.not.include(
+      "22222222-2222-2222-2222-222222222222",
+    );
+  });
+
   it("allows requester 0002 to read only own requests", async () => {
     const response = await GET("/requester/Requests", requesterTwoAuth);
 

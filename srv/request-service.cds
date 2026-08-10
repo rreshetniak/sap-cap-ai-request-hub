@@ -8,6 +8,31 @@ service RequestService {
     category:     String(1);
     displayName:  String(81);
   }
+    @restrict: [
+    {
+      grant: ['READ', 'submit'],
+      to: 'Requester',
+      where: (createdBy = $user)
+    },
+    {
+      grant: 'READ',
+      to: 'Processor',
+      where: (assignedProcessorId = $user)
+    },
+    {
+      grant: 'assign',
+      to: 'Processor'
+    },
+    {
+      grant: ['approve', 'rejectRequest', 'requestClarification'],
+      to: 'Processor',
+      where: (assignedProcessorId = $user)
+    },
+    {
+      grant: '*',
+      to: 'Admin'
+    }
+  ]
 
   entity Requests as projection on db.Requests actions {
     @requires: ['Requester', 'Admin']
