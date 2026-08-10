@@ -49,17 +49,17 @@ jobs:
         run: npm install --global mbt@1.2.49
 
       - name: Build MTA archive
-        run: mbt build -t mta_archives --mtar sap-cap-ai-request-hub_0.1.0.mtar
+        run: mbt build -t mta_archives --mtar sap-cap-ai-request-hub_1.0.0.mtar
 
       - name: Verify MTA archive
         run: |
-          ls -lh mta_archives/sap-cap-ai-request-hub_0.1.0.mtar
-          sha256sum mta_archives/sap-cap-ai-request-hub_0.1.0.mtar
+          ls -lh mta_archives/sap-cap-ai-request-hub_1.0.0.mtar
+          sha256sum mta_archives/sap-cap-ai-request-hub_1.0.0.mtar
 
       - name: Upload MTA archive
         uses: actions/upload-artifact@v7
         with:
-          path: mta_archives/sap-cap-ai-request-hub_0.1.0.mtar
+          path: mta_archives/sap-cap-ai-request-hub_1.0.0.mtar
           archive: false
           if-no-files-found: error
           retention-days: 7
@@ -79,12 +79,12 @@ jobs:
       - name: Download MTA archive
         uses: actions/download-artifact@v8
         with:
-          name: sap-cap-ai-request-hub_0.1.0.mtar
+          name: sap-cap-ai-request-hub_1.0.0.mtar
 
       - name: Verify downloaded MTA archive
         run: |
-          ls -lh sap-cap-ai-request-hub_0.1.0.mtar
-          sha256sum sap-cap-ai-request-hub_0.1.0.mtar
+          ls -lh sap-cap-ai-request-hub_1.0.0.mtar
+          sha256sum sap-cap-ai-request-hub_1.0.0.mtar
 
       - name: Install Cloud Foundry CLI
         run: |
@@ -146,7 +146,7 @@ jobs:
 
       - name: Deploy MTA to SAP BTP
         run: |
-          cf deploy sap-cap-ai-request-hub_0.1.0.mtar -f
+          cf deploy sap-cap-ai-request-hub_1.0.0.mtar -f
 
       - name: Smoke test deployed CAP service
         env:
