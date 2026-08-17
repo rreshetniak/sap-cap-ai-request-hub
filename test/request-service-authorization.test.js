@@ -23,6 +23,13 @@ const adminAuth = {
   },
 };
 
+const unknownUserAuth = {
+  auth: {
+    username: "unknown.user@scarh.com",
+    password: "unknown",
+  },
+};
+
 describe("Request Hub service-level authorization", () => {
   beforeEach(data.reset);
 
@@ -59,4 +66,16 @@ describe("Request Hub service-level authorization", () => {
     expect(requesterResponse.status).to.equal(200);
     expect(processorResponse.status).to.equal(200);
   });
+
+  it("blocks an unknown mock user", async () => {
+  let authenticationError;
+
+  try {
+    await GET("/odata/v4/request/Requests", unknownUserAuth);
+  } catch (error) {
+    authenticationError = error;
+  }
+
+  expect(authenticationError.status).to.equal(401);
+});
 });
