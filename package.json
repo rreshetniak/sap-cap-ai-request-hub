@@ -25,6 +25,15 @@
   },
   "private": true,
   "cds": {
+    "log": {
+      "mask_headers": [
+        "/authorization/i",
+        "/cookie/i",
+        "/cert/i",
+        "/ssl/i",
+        "/postman-token/i"
+        ]
+      },
     "requires": {
       "auth": {
         "[development]": {
