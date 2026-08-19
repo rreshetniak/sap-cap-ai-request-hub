@@ -1,7 +1,9 @@
 const cds = require("@sap/cds");
 const LOG = cds.log("request-service");
 const { SELECT, UPDATE, INSERT } = cds.ql;
-const aiSummaryProvider = require("./ai/mock-ai-summary-provider");
+const {
+  getAiSummaryProvider,
+} = require("./ai/ai-summary-provider");
 
 module.exports = (srv) => {
   const { Requests } = srv.entities;
@@ -11,7 +13,7 @@ module.exports = (srv) => {
 
   const transitionSnapshots = new WeakMap();
 
-  // Shared helper: create a RequestHistory entry
+  // Shared helper: read the current request
 
   const readCurrentRequest = async (req) => {
     const currentRequest = await SELECT.one.from(req.subject);
@@ -26,6 +28,8 @@ module.exports = (srv) => {
 
     return currentRequest;
   };
+
+  // Shared helper: create a RequestHistory entry
 
   const createHistoryEntry = async (
     beforeActionRequest,
@@ -47,7 +51,7 @@ module.exports = (srv) => {
       comment,
     });
   };
-  
+
   // Generate an AI summary suggestion without saving it
 
   srv.on("generateAiSummary", Requests, async (req) => {
@@ -68,13 +72,32 @@ module.exports = (srv) => {
     let suggestion;
 
     try {
+      const aiSummaryProvider = getAiSummaryProvider();
+
       suggestion = await aiSummaryProvider.generateSummary({
         title,
         description,
         requestType: currentRequest.requestType_code,
         priority: currentRequest.priority_code,
       });
-    } catch {
+    } catch (error) {
+      if (
+        error.code === "AI_SUMMARY_PROVIDER_NOT_CONFIGURED" ||
+        error.code === "GEMINI_API_KEY_MISSING"
+      ) {
+        return req.reject({
+          status: 503,
+          code: "AI_SUMMARY_PROVIDER_UNAVAILABLE",
+          message: "The AI summary provider is not configured.",
+        });
+      }
+
+      LOG.error("AI summary generation failed", {
+        name: error.name,
+        code: error.code,
+        message: error.message,
+      });
+
       return req.reject({
         status: 502,
         code: "AI_SUMMARY_GENERATION_FAILED",
@@ -163,6 +186,7 @@ module.exports = (srv) => {
         target: "title",
       });
     }
+
     if (!currentRequest.description?.trim()) {
       req.error({
         status: 400,
@@ -171,6 +195,7 @@ module.exports = (srv) => {
         target: "description",
       });
     }
+
     if (!currentRequest.requestType_code?.trim()) {
       req.error({
         status: 400,
@@ -179,6 +204,7 @@ module.exports = (srv) => {
         target: "requestType_code",
       });
     }
+
     if (!currentRequest.priority_code?.trim()) {
       req.error({
         status: 400,
@@ -255,7 +281,9 @@ module.exports = (srv) => {
         assignedProcessorId: req.data.processorId,
       });
 
-      const pendingApprovalSteps = await SELECT.from(ApprovalSteps).where({
+      const pendingApprovalSteps = await SELECT.from(
+        ApprovalSteps,
+      ).where({
         request_ID: beforeActionRequest.ID,
         decision: "PENDING",
       });
@@ -263,11 +291,14 @@ module.exports = (srv) => {
       if (pendingApprovalSteps.length === 0) {
         const lastApprovalStep = await SELECT.from(ApprovalSteps)
           .columns("stepNo")
-          .where({ request_ID: beforeActionRequest.ID })
+          .where({
+            request_ID: beforeActionRequest.ID,
+          })
           .orderBy("stepNo desc")
           .limit(1);
 
-        const nextStepNo = (lastApprovalStep[0]?.stepNo ?? 0) + 1;
+        const nextStepNo =
+          (lastApprovalStep[0]?.stepNo ?? 0) + 1;
 
         await INSERT.into(ApprovalSteps).entries({
           request_ID: beforeActionRequest.ID,
@@ -282,10 +313,13 @@ module.exports = (srv) => {
   });
 
   /** Request before Approve **/
+
   srv.before("approve", Requests, async (req) => {
     const currentRequest = await readCurrentRequest(req);
 
-    const pendingApprovalSteps = await SELECT.from(ApprovalSteps).where({
+    const pendingApprovalSteps = await SELECT.from(
+      ApprovalSteps,
+    ).where({
       request_ID: currentRequest.ID,
       decision: "PENDING",
     });
@@ -303,6 +337,7 @@ module.exports = (srv) => {
       ID: currentRequest.ID,
       status_code: currentRequest.status_code,
     };
+
     const pendingApprovalStep = pendingApprovalSteps[0];
 
     transitionSnapshots.set(req, {
@@ -317,7 +352,8 @@ module.exports = (srv) => {
     const approvalSnapshot = transitionSnapshots.get(req);
 
     try {
-      const approvalComment = req.data.approvalComment?.trim() || null;
+      const approvalComment =
+        req.data.approvalComment?.trim() || null;
 
       await UPDATE(ApprovalSteps)
         .where({
@@ -328,6 +364,7 @@ module.exports = (srv) => {
           decisionComment: approvalComment,
           decidedAt: req.timestamp,
         });
+
       const afterActionRequest = await readCurrentRequest(req);
 
       await createHistoryEntry(
@@ -389,7 +426,8 @@ module.exports = (srv) => {
   /** Request before Clarification **/
 
   srv.before("requestClarification", Requests, async (req) => {
-    const clarificationComment = req.data.clarificationComment?.trim();
+    const clarificationComment =
+      req.data.clarificationComment?.trim();
 
     if (!clarificationComment) {
       req.reject({
@@ -414,32 +452,43 @@ module.exports = (srv) => {
 
   /** Request after Clarification **/
 
-  srv.after("requestClarification", Requests, async (_result, req) => {
-    const beforeActionRequest = transitionSnapshots.get(req);
+  srv.after(
+    "requestClarification",
+    Requests,
+    async (_result, req) => {
+      const beforeActionRequest = transitionSnapshots.get(req);
 
-    try {
-      const afterActionRequest = await readCurrentRequest(req);
+      try {
+        const afterActionRequest =
+          await readCurrentRequest(req);
 
-      await createHistoryEntry(beforeActionRequest, afterActionRequest, {
-        eventType: "CLARIFICATION_REQUESTED",
-        comment: req.data.clarificationComment,
-      });
-    } finally {
-      transitionSnapshots.delete(req);
-    }
-  });
+        await createHistoryEntry(
+          beforeActionRequest,
+          afterActionRequest,
+          {
+            eventType: "CLARIFICATION_REQUESTED",
+            comment: req.data.clarificationComment,
+          },
+        );
+      } finally {
+        transitionSnapshots.delete(req);
+      }
+    },
+  );
 
   // Function getBusinessPartnerDetails
 
   srv.on("getBusinessPartnerDetails", Requests, async (req) => {
     const currentRequest = await readCurrentRequest(req);
-    const businessPartnerId = currentRequest.businessPartnerId?.trim();
+    const businessPartnerId =
+      currentRequest.businessPartnerId?.trim();
 
     if (!businessPartnerId) {
       return req.reject({
         status: 409,
         code: "BUSINESS_PARTNER_ID_REQUIRED",
-        message: "The request does not contain a Business Partner identifier.",
+        message:
+          "The request does not contain a Business Partner identifier.",
         target: "businessPartnerId",
       });
     }
@@ -448,9 +497,10 @@ module.exports = (srv) => {
 
     try {
       const businessPartnerService =
-       await cds.connect.to("API_BUSINESS_PARTNER");
+        await cds.connect.to("API_BUSINESS_PARTNER");
 
-      const { A_BusinessPartner } = businessPartnerService.entities;
+      const { A_BusinessPartner } =
+        businessPartnerService.entities;
 
       businessPartner = await businessPartnerService.run(
         SELECT.one
@@ -470,10 +520,12 @@ module.exports = (srv) => {
         businessPartnerId,
         reason: error.message,
       });
+
       return req.reject({
         status: 503,
         code: "BUSINESS_PARTNER_SERVICE_UNAVAILABLE",
-        message: "The Business Partner service is currently unavailable.",
+        message:
+          "The Business Partner service is currently unavailable.",
       });
     }
 
@@ -481,7 +533,8 @@ module.exports = (srv) => {
       return req.reject({
         status: 404,
         code: "BUSINESS_PARTNER_NOT_FOUND",
-        message: `Business Partner ${businessPartnerId} was not found.`,
+        message:
+          `Business Partner ${businessPartnerId} was not found.`,
       });
     }
 
@@ -495,7 +548,8 @@ module.exports = (srv) => {
       return req.reject({
         status: 502,
         code: "BUSINESS_PARTNER_RESPONSE_INVALID",
-        message: "The Business Partner service returned an invalid response.",
+        message:
+          "The Business Partner service returned an invalid response.",
       });
     }
 

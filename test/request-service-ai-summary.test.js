@@ -1,3 +1,4 @@
+process.env.AI_SUMMARY_PROVIDER = "mock";
 const cds = require("@sap/cds");
 
 const test = cds.test(__dirname + "/..", "--with-mocks");

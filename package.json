@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "dependencies": {
     "@cap-js/hana": "^2",
+    "@google/genai": "^2.17.1",
     "@sap-cloud-sdk/connectivity": "^4",
     "@sap-cloud-sdk/http-client": "^4",
     "@sap-cloud-sdk/resilience": "^4",
@@ -18,7 +19,7 @@
   },
   "scripts": {
     "start": "cds-serve",
-    "test": "cross-env CDS_PLUGIN_UI5_ACTIVE=false node --test \"test/**/*.test.js\"",
+    "test": "cross-env CDS_PLUGIN_UI5_ACTIVE=false AI_SUMMARY_PROVIDER=mock node --test \"test/**/*.test.js\"",
     "test:read": "node --test test/request-service-read.test.js",
     "test:lifecycle": "node --test test/request-lifecycle-submit.test.js test/request-lifecycle-negative.test.js test/request-lifecycle-approve.test.js",
     "watch-requesthub": "cds watch --open com.portfolio.requesthub/index.html?sap-ui-xx-viewCache=false --livereload false"
@@ -32,8 +33,8 @@
         "/cert/i",
         "/ssl/i",
         "/postman-token/i"
-        ]
-      },
+      ]
+    },
     "requires": {
       "auth": {
         "[development]": {
