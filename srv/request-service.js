@@ -1,6 +1,7 @@
 const cds = require("@sap/cds");
 const LOG = cds.log("request-service");
 const { SELECT, UPDATE, INSERT } = cds.ql;
+const aiSummaryProvider = require("./ai/mock-ai-summary-provider");
 
 module.exports = (srv) => {
   const { Requests } = srv.entities;
@@ -46,6 +47,108 @@ module.exports = (srv) => {
       comment,
     });
   };
+  
+  // Generate an AI summary suggestion without saving it
+
+  srv.on("generateAiSummary", Requests, async (req) => {
+    const currentRequest = await readCurrentRequest(req);
+
+    const title = currentRequest.title?.trim();
+    const description = currentRequest.description?.trim();
+
+    if (!title || !description) {
+      return req.reject({
+        status: 409,
+        code: "AI_SUMMARY_INPUT_INCOMPLETE",
+        message:
+          "A title and description are required to generate an AI summary.",
+      });
+    }
+
+    let suggestion;
+
+    try {
+      suggestion = await aiSummaryProvider.generateSummary({
+        title,
+        description,
+        requestType: currentRequest.requestType_code,
+        priority: currentRequest.priority_code,
+      });
+    } catch {
+      return req.reject({
+        status: 502,
+        code: "AI_SUMMARY_GENERATION_FAILED",
+        message: "The AI summary could not be generated.",
+      });
+    }
+
+    const summary = suggestion?.summary?.trim();
+
+    if (!summary || summary.length > 1000) {
+      return req.reject({
+        status: 502,
+        code: "AI_SUMMARY_RESPONSE_INVALID",
+        message: "The AI summary provider returned an invalid response.",
+      });
+    }
+
+    return {
+      summary,
+      provider: suggestion.provider,
+      generatedAt: req.timestamp,
+    };
+  });
+
+  // Save an AI summary only after explicit user confirmation
+
+  srv.on("acceptAiSummary", Requests, async (req) => {
+    const currentRequest = await readCurrentRequest(req);
+    const summary = req.data.summary?.trim();
+
+    if (!summary) {
+      return req.reject({
+        status: 400,
+        code: "AI_SUMMARY_REQUIRED",
+        message: "An AI summary is required.",
+        target: "summary",
+      });
+    }
+
+    if (summary.length > 1000) {
+      return req.reject({
+        status: 400,
+        code: "AI_SUMMARY_TOO_LONG",
+        message: "The AI summary must not exceed 1000 characters.",
+        target: "summary",
+      });
+    }
+
+    if (
+      !["DRAFT", "CLARIFICATION_REQUIRED"].includes(
+        currentRequest.status_code,
+      )
+    ) {
+      return req.reject({
+        status: 409,
+        code: "AI_SUMMARY_NOT_EDITABLE",
+        message:
+          "An AI summary can be accepted only for a draft or clarification request.",
+      });
+    }
+
+    await UPDATE(req.subject).with({
+      aiSummary: summary,
+    });
+
+    const updatedRequest = await readCurrentRequest(req);
+
+    await createHistoryEntry(currentRequest, updatedRequest, {
+      eventType: "AI_SUMMARY_ACCEPTED",
+      comment: "AI summary accepted by the user.",
+    });
+
+    return updatedRequest;
+  });
 
   /** Request before Submit **/
 

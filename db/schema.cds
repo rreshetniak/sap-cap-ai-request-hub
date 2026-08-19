@@ -21,6 +21,7 @@ type RequestHistoryEventType : String(40) enum {
   Approved = 'APPROVED';
   Rejected = 'REJECTED';
   ClarificationRequested = 'CLARIFICATION_REQUESTED';
+  AiSummaryAccepted = 'AI_SUMMARY_ACCEPTED';
 };
 
 type ApprovalDecision : String(30) enum {
