@@ -17,6 +17,8 @@ modules:
     parameters:
       instances: 1
       buildpack: nodejs_buildpack
+    properties:
+      AI_SUMMARY_PROVIDER: gemini
     build-parameters:
       builder: npm-ci
     provides:
@@ -27,6 +29,7 @@ modules:
       - name: sap-cap-ai-request-hub-auth
       - name: sap-cap-ai-request-hub-db
       - name: sap-cap-ai-request-hub-destination
+      - name: request-hub-gemini
 
   - name: sap-cap-ai-request-hub-db-deployer
     type: hdb
@@ -51,3 +54,7 @@ resources:
     parameters:
       service: destination
       service-plan: lite
+  - name: request-hub-gemini
+    type: org.cloudfoundry.existing-service
+    parameters:
+      service-name: request-hub-gemini

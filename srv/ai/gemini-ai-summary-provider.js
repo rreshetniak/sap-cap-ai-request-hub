@@ -1,12 +1,44 @@
-const MODEL =
-  process.env.GEMINI_MODEL || "gemini-3.6-flash";
+const SERVICE_NAME = "request-hub-gemini";
+const MODEL = process.env.GEMINI_MODEL || "gemini-3.6-flash";
 
 let clientPromise;
 
-const getClient = async () => {
+const getApiKeyFromCloudFoundry = () => {
+  const vcapServices = process.env.VCAP_SERVICES;
+
+  if (!vcapServices) {
+    return undefined;
+  }
+
+  let services;
+
+  try {
+    services = JSON.parse(vcapServices);
+  } catch {
+    return undefined;
+  }
+
+  const serviceInstances = Object.values(services).flat();
+
+  const geminiService = serviceInstances.find(
+    (serviceInstance) =>
+      serviceInstance.name === SERVICE_NAME,
+  );
+
+  return geminiService?.credentials?.apiKey;
+};
+
+const getApiKey = () =>
+  process.env.GEMINI_API_KEY ||
+  getApiKeyFromCloudFoundry();
+
+const getClient = async (apiKey) => {
   if (!clientPromise) {
     clientPromise = import("@google/genai").then(
-      ({ GoogleGenAI }) => new GoogleGenAI({}),
+      ({ GoogleGenAI }) =>
+        new GoogleGenAI({
+          apiKey,
+        }),
     );
   }
 
@@ -22,13 +54,18 @@ module.exports = {
     requestType,
     priority,
   }) {
-    if (!process.env.GEMINI_API_KEY) {
-      const error = new Error("GEMINI_API_KEY is not configured.");
+    const apiKey = getApiKey();
+
+    if (!apiKey) {
+      const error = new Error(
+        "Gemini API key is not configured.",
+      );
+
       error.code = "GEMINI_API_KEY_MISSING";
       throw error;
     }
 
-    const ai = await getClient();
+    const ai = await getClient(apiKey);
 
     const requestData = JSON.stringify({
       title,
