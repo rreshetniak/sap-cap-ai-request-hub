@@ -127,7 +127,19 @@
           "options": {
             "settings": {
               "editableHeaderContent": false,
-              "contextPath": "/Requests"
+              "contextPath": "/Requests",
+              "content": {
+                "header": {
+                  "actions": {
+                    "GenerateAiSummary": {
+                      "press": "com.portfolio.requesthub.ext.controller.AISummary.onGenerateAiSummary",
+                      "visible": true,
+                      "enabled": true,
+                      "text": "{i18n>generateAiSummary}"
+                    }
+                  }
+                }
+              }
             }
           }
         }
